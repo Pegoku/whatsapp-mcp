@@ -126,6 +126,7 @@ func run() error {
 	rateLimit := fs.Int("rate-limit", 10, "maximum sends per minute")
 	debug := fs.Bool("debug", false, "verbose protocol logging")
 	deviceName := fs.String("device-name", "WhatsApp MCP", "name shown under Linked Devices on your phone")
+	pairPhone := fs.String("pair-phone", "", "link with a pairing code for this phone number (digits with country code) instead of a QR")
 	httpAddr := fs.String("http", "", "serve MCP over HTTP at this address instead of stdio")
 	httpToken := fs.String("token", "", "bearer token for the HTTP transport")
 	publicHost := fs.String("public-host", "", "hostname a reverse proxy reaches this on, for example whatsapp.example.com")
@@ -234,6 +235,7 @@ func run() error {
 		Debug:       *debug,
 		Transcriber: stt,
 		DeviceName:  *deviceName,
+		PairPhone:   *pairPhone,
 		Responder:   responder,
 		Speaker:     speaker,
 	})

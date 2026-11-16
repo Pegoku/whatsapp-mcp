@@ -61,6 +61,10 @@ type Client struct {
 	// itself rather than relying on the terminal drawing.
 	qrCodes chan<- string
 
+	// pairPhone, when set, links with an 8-character code instead of a QR.
+	pairPhone string
+	pairSent  bool
+
 	// responder, when set, answers messages in one designated chat by itself.
 	responder *agent.Responder
 
@@ -94,6 +98,8 @@ type Options struct {
 	// "WhatsApp MCP". WhatsApp shows "Other device" when a client sends
 	// nothing, which is what happens by default.
 	DeviceName string
+	// PairPhone links by phone number with a pairing code instead of a QR.
+	PairPhone string
 }
 
 // New opens the session database and builds a client. It does not connect.
@@ -166,6 +172,7 @@ func New(ctx context.Context, opts Options) (*Client, error) {
 		stt:       opts.Transcriber,
 		dataDir:   opts.DataDir,
 		qrCodes:   opts.QRCodes,
+		pairPhone: opts.PairPhone,
 		responder: opts.Responder,
 		speaker:   opts.Speaker,
 	}
@@ -195,6 +202,17 @@ func (c *Client) Connect(ctx context.Context) error {
 	for evt := range qrChan {
 		switch evt.Event {
 		case "code":
+			if c.pairPhone != "" {
+				if !c.pairSent {
+					code, err := c.wm.PairPhone(ctx, c.pairPhone, true, whatsmeow.PairClientChrome, "Chrome (Windows)")
+					if err != nil {
+						return fmt.Errorf("phone pairing: %w", err)
+					}
+					c.pairSent = true
+					fmt.Fprintf(c.out, "\nPAIRING CODE: %s\n\nOn your phone: Linked Devices, Link a Device, Link with phone number instead, then enter the code.\n\n", code)
+				}
+				continue
+			}
 			// The raw code is emitted on its own line as well as drawn, so a
 			// wrapper can render the QR somewhere better than a terminal. A
 			// browser popup is far easier to scan than terminal blocks.
